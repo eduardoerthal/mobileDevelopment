@@ -8,6 +8,7 @@ import '../services/api_exception.dart';
 import '../services/api_service.dart';
 import '../widgets/character_image.dart';
 import '../widgets/error_view.dart';
+import 'consumed_screen.dart';
 import 'detail_screen.dart';
 import 'favorites_screen.dart';
 
@@ -35,6 +36,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
   bool _isLoadingMore = false;
   String? _loadMoreError;
 
+  final _searchController = TextEditingController();
+  bool _isSearching = false;
+  String? _searchError;
+
   @override
   void initState() {
     super.initState();
@@ -44,6 +49,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
   @override
   void dispose() {
     _apiService.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -87,6 +93,52 @@ class _CatalogScreenState extends State<CatalogScreen> {
     }
   }
 
+  /// Searches by name via [ApiService.searchCharacters] and, on a match,
+  /// navigates straight to that character's [DetailScreen] — no
+  /// intermediate results list.
+  Future<void> _search() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
+      setState(() => _searchError = 'Digite um nome para buscar.');
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+      _searchError = null;
+    });
+
+    try {
+      final results = await _apiService.searchCharacters(query);
+      if (!mounted) return;
+
+      if (results.isEmpty) {
+        setState(() {
+          _searchError =
+              'Nenhum personagem encontrado com o nome "$query".';
+        });
+        return;
+      }
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DetailScreen(characterId: results.first.id),
+        ),
+      );
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _searchError = e.message);
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _searchError = 'Ocorreu um erro inesperado. Tente novamente.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSearching = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -102,34 +154,100 @@ class _CatalogScreenState extends State<CatalogScreen> {
             ),
           ),
           IconButton(
+            icon: const Icon(Icons.visibility_outlined),
+            tooltip: 'Visualizados',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ConsumedScreen()),
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Sair',
             onPressed: () => context.read<AuthProvider>().logout(),
           ),
         ],
       ),
-      body: FutureBuilder<void>(
-        future: _initialLoadFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Column(
+        children: [
+          _buildSearchBar(),
+          Expanded(
+            child: FutureBuilder<void>(
+              future: _initialLoadFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          if (snapshot.hasError) {
-            final message = snapshot.error is ApiException
-                ? (snapshot.error as ApiException).message
-                : 'Ocorreu um erro inesperado. Tente novamente.';
-            return ErrorView(message: message, onRetry: _retryInitialLoad);
-          }
+                if (snapshot.hasError) {
+                  final message = snapshot.error is ApiException
+                      ? (snapshot.error as ApiException).message
+                      : 'Ocorreu um erro inesperado. Tente novamente.';
+                  return ErrorView(
+                    message: message,
+                    onRetry: _retryInitialLoad,
+                  );
+                }
 
-          if (_characters.isEmpty) {
-            return const Center(
-              child: Text('Nenhum personagem encontrado.'),
-            );
-          }
+                if (_characters.isEmpty) {
+                  return const Center(
+                    child: Text('Nenhum personagem encontrado.'),
+                  );
+                }
 
-          return _buildGrid();
-        },
+                return _buildGrid();
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  enabled: !_isSearching,
+                  decoration: const InputDecoration(
+                    hintText: 'Buscar personagem pelo nome',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) => _search(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: _isSearching ? null : _search,
+                child: _isSearching
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Buscar'),
+              ),
+            ],
+          ),
+          if (_searchError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                _searchError!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+        ],
       ),
     );
   }

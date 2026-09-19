@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/character.dart';
+import '../providers/consumed_provider.dart';
 import '../providers/favorites_provider.dart';
 import '../services/api_exception.dart';
 import '../services/api_service.dart';
@@ -102,6 +103,32 @@ class _FavoriteButton extends StatelessWidget {
   }
 }
 
+/// Checkbox that marks/unmarks [character] as viewed, reflecting the
+/// current state via [ConsumedProvider].
+class _ConsumedCheckbox extends StatelessWidget {
+  const _ConsumedCheckbox({required this.character});
+
+  final Character character;
+
+  @override
+  Widget build(BuildContext context) {
+    final isConsumed = context.select<ConsumedProvider, bool>(
+      (consumed) => consumed.isConsumed(character.id),
+    );
+
+    return CheckboxListTile(
+      contentPadding: EdgeInsets.zero,
+      controlAffinity: ListTileControlAffinity.leading,
+      value: isConsumed,
+      onChanged: (_) => context.read<ConsumedProvider>().toggle(character),
+      secondary: Icon(
+        isConsumed ? Icons.visibility : Icons.visibility_outlined,
+      ),
+      title: const Text('Marcar como visualizado'),
+    );
+  }
+}
+
 class _DetailBody extends StatelessWidget {
   const _DetailBody({required this.character});
 
@@ -156,6 +183,8 @@ class _DetailBody extends StatelessWidget {
                   label: 'Localização atual',
                   value: character.location.name,
                 ),
+                const Divider(height: 32),
+                _ConsumedCheckbox(character: character),
               ],
             ),
           ),

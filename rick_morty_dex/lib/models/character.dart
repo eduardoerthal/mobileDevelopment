@@ -23,6 +23,13 @@ class LocationReference {
       url: json['url'] as String? ?? '',
     );
   }
+
+  /// Inverse of [LocationReference.fromJson] — used to persist favorited/
+  /// viewed characters locally (see [Character.toJson]).
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'url': url,
+  };
 }
 
 /// A character as returned by the rickandmortyapi.com `/character`
@@ -75,4 +82,20 @@ class Character {
       image: json['image'] as String? ?? '',
     );
   }
+
+  /// Inverse of [Character.fromJson] — used to persist this character
+  /// locally (favorites/consumed lists) as JSON via shared_preferences.
+  /// Only the fields this app models are round-tripped; `episode`, `url`
+  /// and `created` from the API response are not kept.
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'status': status,
+    'species': species,
+    'type': type,
+    'gender': gender,
+    'origin': origin.toJson(),
+    'location': location.toJson(),
+    'image': image,
+  };
 }
