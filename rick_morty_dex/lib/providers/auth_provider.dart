@@ -43,12 +43,23 @@ class AuthProvider extends ChangeNotifier {
   String? get currentUsername => _currentUsername;
 
   /// Restores a previously active session, if any, on app startup.
+  ///
+  /// Never leaves [status] stuck at [AuthStatus.initializing]: if reading
+  /// local storage fails for any reason, this falls back to
+  /// [AuthStatus.unauthenticated] so the app still reaches [LoginScreen]
+  /// instead of hanging on the startup spinner forever.
   Future<void> _restoreSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    _currentUsername = prefs.getString(_sessionPrefsKey);
-    _status = _currentUsername != null
-        ? AuthStatus.authenticated
-        : AuthStatus.unauthenticated;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _currentUsername = prefs.getString(_sessionPrefsKey);
+      _status = _currentUsername != null
+          ? AuthStatus.authenticated
+          : AuthStatus.unauthenticated;
+    } catch (error) {
+      debugPrint('AuthProvider: failed to restore session: $error');
+      _currentUsername = null;
+      _status = AuthStatus.unauthenticated;
+    }
     notifyListeners();
   }
 

@@ -23,7 +23,14 @@ class ErrorView extends StatelessWidget {
               color: Theme.of(context).colorScheme.error,
             ),
             const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
+            // liveRegion: a screen reader announces this automatically
+            // as soon as it appears, since it replaces prior content
+            // asynchronously — the user shouldn't have to go looking
+            // for it.
+            Semantics(
+              liveRegion: true,
+              child: Text(message, textAlign: TextAlign.center),
+            ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: onRetry,

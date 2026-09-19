@@ -51,11 +51,33 @@ class RickMortyDexApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'Rick and Morty Dex',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-          useMaterial3: true,
-        ),
+        theme: _buildTheme(),
         home: const _AuthGate(),
+      ),
+    );
+  }
+
+  /// Material 3's default button heights (around 40dp) fall short of
+  /// the recommended 48x48 minimum touch target, so every button type
+  /// gets a floor here — set once, for every button in the app, rather
+  /// than repeated per call site.
+  ThemeData _buildTheme() {
+    const minTapTarget = Size(48, 48);
+
+    return ThemeData(
+      colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+      useMaterial3: true,
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(minimumSize: minTapTarget),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(minimumSize: minTapTarget),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(minimumSize: minTapTarget),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(minimumSize: minTapTarget),
       ),
     );
   }
@@ -73,7 +95,11 @@ class _AuthGate extends StatelessWidget {
 
     if (auth.isInitializing) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: CircularProgressIndicator(
+            semanticsLabel: 'Restaurando sessão',
+          ),
+        ),
       );
     }
 

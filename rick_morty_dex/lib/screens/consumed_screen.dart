@@ -58,7 +58,11 @@ class _ConsumedTile extends StatelessWidget {
         subtitle: Text('${character.species} • ${character.status}'),
         trailing: IconButton(
           icon: const Icon(Icons.visibility),
-          tooltip: 'Remover dos visualizados',
+          // Names the character explicitly — this button repeats once
+          // per row, so a bare "Remover dos visualizados" would be
+          // ambiguous to someone navigating the list with a screen
+          // reader.
+          tooltip: 'Remover ${character.name} dos visualizados',
           onPressed: () =>
               context.read<ConsumedProvider>().remove(character.id),
         ),

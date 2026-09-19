@@ -56,8 +56,15 @@ class _FavoriteTile extends StatelessWidget {
         title: Text(character.name),
         subtitle: Text('${character.species} • ${character.status}'),
         trailing: IconButton(
-          icon: const Icon(Icons.star, color: Colors.amber),
-          tooltip: 'Remover dos favoritos',
+          // shade800, not the plain amber swatch: enough contrast
+          // against the card background to meet non-text contrast
+          // guidelines while still reading clearly as "gold star".
+          icon: Icon(Icons.star, color: Colors.amber.shade800),
+          // Names the character explicitly — this button repeats once
+          // per row, so a bare "Remover dos favoritos" would be
+          // ambiguous to someone navigating the list with a screen
+          // reader.
+          tooltip: 'Remover ${character.name} dos favoritos',
           onPressed: () =>
               context.read<FavoritesProvider>().remove(character.id),
         ),

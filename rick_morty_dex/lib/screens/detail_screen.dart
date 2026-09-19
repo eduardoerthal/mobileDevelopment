@@ -67,7 +67,11 @@ class _DetailScreenState extends State<DetailScreen> {
 
   Widget _buildBody(AsyncSnapshot<Character> snapshot) {
     if (snapshot.connectionState != ConnectionState.done) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(
+          semanticsLabel: 'Carregando detalhes do personagem',
+        ),
+      );
     }
 
     if (snapshot.hasError) {
@@ -96,8 +100,13 @@ class _FavoriteButton extends StatelessWidget {
 
     return IconButton(
       icon: Icon(isFavorite ? Icons.star : Icons.star_border),
-      color: isFavorite ? Colors.amber : null,
-      tooltip: isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos',
+      // Colors.amber alone is too light against the AppBar background
+      // to meet non-text contrast guidelines; shade800 keeps the same
+      // "gold star" read with enough contrast.
+      color: isFavorite ? Colors.amber.shade800 : null,
+      tooltip: isFavorite
+          ? 'Remover ${character.name} dos favoritos'
+          : 'Adicionar ${character.name} aos favoritos',
       onPressed: () => context.read<FavoritesProvider>().toggle(character),
     );
   }
@@ -147,6 +156,7 @@ class _DetailBody extends StatelessWidget {
             child: CharacterImage(
               imageUrl: character.image,
               placeholderIconSize: 96,
+              semanticLabel: 'Foto de ${character.name}',
             ),
           ),
           Padding(
@@ -196,7 +206,9 @@ class _DetailBody extends StatelessWidget {
   Color _statusColor(String status, ThemeData theme) {
     switch (status.toLowerCase()) {
       case 'alive':
-        return Colors.green;
+        // Colors.green on its own doesn't reach 4.5:1 against a light
+        // background; shade700 does while still reading as "green".
+        return Colors.green.shade700;
       case 'dead':
         return theme.colorScheme.error;
       default:

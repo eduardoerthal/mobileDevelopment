@@ -6,7 +6,7 @@ import '../models/character_page.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_exception.dart';
 import '../services/api_service.dart';
-import '../widgets/character_image.dart';
+import '../widgets/character_grid_tile.dart';
 import '../widgets/error_view.dart';
 import 'consumed_screen.dart';
 import 'detail_screen.dart';
@@ -176,7 +176,11 @@ class _CatalogScreenState extends State<CatalogScreen> {
               future: _initialLoadFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState != ConnectionState.done) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      semanticsLabel: 'Carregando personagens',
+                    ),
+                  );
                 }
 
                 if (snapshot.hasError) {
@@ -233,7 +237,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
                     ? const SizedBox(
                         height: 18,
                         width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          semanticsLabel: 'Buscando personagem',
+                        ),
                       )
                     : const Text('Buscar'),
               ),
@@ -242,9 +249,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
           if (_searchError != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                _searchError!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              child: Semantics(
+                liveRegion: true,
+                child: Text(
+                  _searchError!,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
               ),
             ),
         ],
@@ -265,7 +277,16 @@ class _CatalogScreenState extends State<CatalogScreen> {
               mainAxisSpacing: 12,
             ),
             delegate: SliverChildBuilderDelegate(
-              (context, index) => _CharacterCard(character: _characters[index]),
+              (context, index) => CharacterGridTile(
+                character: _characters[index],
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        DetailScreen(characterId: _characters[index].id),
+                  ),
+                ),
+              ),
               childCount: _characters.length,
             ),
           ),
@@ -283,19 +304,26 @@ class _CatalogScreenState extends State<CatalogScreen> {
       child: Column(
         children: [
           if (_loadMoreError != null) ...[
-            Text(
-              _loadMoreError!,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                _loadMoreError!,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
             ),
             const SizedBox(height: 12),
           ],
           if (_isLoadingMore)
-            const CircularProgressIndicator()
+            const CircularProgressIndicator(
+              semanticsLabel: 'Carregando mais personagens',
+            )
           else if (hasNextPage)
             ElevatedButton(
               onPressed: _loadMore,
-              child: const Text('Carregar Mais'),
+              child: Text(
+                _loadMoreError != null ? 'Tentar novamente' : 'Carregar Mais',
+              ),
             )
           else
             Text(
@@ -303,47 +331,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
               style: Theme.of(context).textTheme.bodySmall,
             ),
         ],
-      ),
-    );
-  }
-}
-
-/// One character tile: image (or placeholder) above the name. Tapping it
-/// opens [DetailScreen] for this character's id.
-class _CharacterCard extends StatelessWidget {
-  const _CharacterCard({required this.character});
-
-  final Character character;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => DetailScreen(characterId: character.id),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: CharacterImage(imageUrl: character.image)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Text(
-                character.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -150,21 +150,29 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     if (_errorMessage != null) ...[
                       const SizedBox(height: 12),
-                      Text(
-                        _errorMessage!,
-                        style: TextStyle(color: theme.colorScheme.error),
-                        textAlign: TextAlign.center,
+                      // liveRegion: announced automatically, since it
+                      // appears asynchronously after a failed attempt.
+                      Semantics(
+                        liveRegion: true,
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(color: theme.colorScheme.error),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ],
                     const SizedBox(height: 24),
                     FilledButton(
                       onPressed: _isSubmitting ? null : _submit,
                       child: _isSubmitting
-                          ? const SizedBox(
+                          ? SizedBox(
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
+                                semanticsLabel: _isRegisterMode
+                                    ? 'Cadastrando'
+                                    : 'Entrando',
                               ),
                             )
                           : Text(_isRegisterMode ? 'Cadastrar' : 'Entrar'),
