@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/character.dart';
+import '../providers/favorites_provider.dart';
 import '../services/api_exception.dart';
 import '../services/api_service.dart';
 import '../widgets/character_image.dart';
@@ -42,25 +44,60 @@ class _DetailScreenState extends State<DetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Detalhes')),
-      body: FutureBuilder<Character>(
-        future: _characterFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return FutureBuilder<Character>(
+      future: _characterFuture,
+      builder: (context, snapshot) {
+        final character = snapshot.data;
 
-          if (snapshot.hasError) {
-            final message = snapshot.error is ApiException
-                ? (snapshot.error as ApiException).message
-                : 'Ocorreu um erro inesperado. Tente novamente.';
-            return ErrorView(message: message, onRetry: _retry);
-          }
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(character?.name ?? 'Detalhes'),
+            actions: [
+              // Only shown once the character has loaded — toggling a
+              // favorite needs the full Character, not just its id.
+              if (character != null) _FavoriteButton(character: character),
+            ],
+          ),
+          body: _buildBody(snapshot),
+        );
+      },
+    );
+  }
 
-          return _DetailBody(character: snapshot.data!);
-        },
-      ),
+  Widget _buildBody(AsyncSnapshot<Character> snapshot) {
+    if (snapshot.connectionState != ConnectionState.done) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (snapshot.hasError) {
+      final message = snapshot.error is ApiException
+          ? (snapshot.error as ApiException).message
+          : 'Ocorreu um erro inesperado. Tente novamente.';
+      return ErrorView(message: message, onRetry: _retry);
+    }
+
+    return _DetailBody(character: snapshot.data!);
+  }
+}
+
+/// Star icon in the AppBar that toggles [character]'s favorite state,
+/// reflecting the current state via [FavoritesProvider].
+class _FavoriteButton extends StatelessWidget {
+  const _FavoriteButton({required this.character});
+
+  final Character character;
+
+  @override
+  Widget build(BuildContext context) {
+    final isFavorite = context.select<FavoritesProvider, bool>(
+      (favorites) => favorites.isFavorite(character.id),
+    );
+
+    return IconButton(
+      icon: Icon(isFavorite ? Icons.star : Icons.star_border),
+      color: isFavorite ? Colors.amber : null,
+      tooltip: isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos',
+      onPressed: () => context.read<FavoritesProvider>().toggle(character),
     );
   }
 }

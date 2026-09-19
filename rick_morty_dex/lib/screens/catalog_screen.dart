@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/character.dart';
 import '../models/character_page.dart';
+import '../providers/auth_provider.dart';
 import '../services/api_exception.dart';
 import '../services/api_service.dart';
 import '../widgets/character_image.dart';
 import '../widgets/error_view.dart';
 import 'detail_screen.dart';
+import 'favorites_screen.dart';
 
-/// Character catalog: a 2-column grid loaded from [ApiService], with a
-/// "Carregar Mais" button that fetches and appends the next page.
+/// Character catalog — the app's main screen once logged in. A 2-column
+/// grid loaded from [ApiService], with a "Carregar Mais" button that
+/// fetches and appends the next page.
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});
 
@@ -86,7 +90,24 @@ class _CatalogScreenState extends State<CatalogScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Personagens')),
+      appBar: AppBar(
+        title: const Text('Personagens'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.star_outline),
+            tooltip: 'Favoritos',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const FavoritesScreen()),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Sair',
+            onPressed: () => context.read<AuthProvider>().logout(),
+          ),
+        ],
+      ),
       body: FutureBuilder<void>(
         future: _initialLoadFuture,
         builder: (context, snapshot) {
